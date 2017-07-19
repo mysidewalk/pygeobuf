@@ -34,9 +34,9 @@ class Decoder:
 
     def decode_feature_collection(self, feature_collection):
         obj = {'type': 'FeatureCollection', 'features': []}
-        self.decode_properties(feature_collection.custom_properties, feature_collection.values, obj)
         for feature in feature_collection.features:
             obj['features'].append(self.decode_feature(feature))
+        self.decode_properties(feature_collection.custom_properties, feature_collection.values, obj)
 
         return obj
 
@@ -44,21 +44,23 @@ class Decoder:
         obj = collections.OrderedDict()
         obj['type'] = 'Feature'
 
-        self.decode_properties(feature.custom_properties, feature.values, obj)
-
         self.decode_id(feature, obj)
         obj['geometry'] = self.decode_geometry(feature.geometry)
         if len(feature.properties):
             obj['properties'] = self.decode_properties(feature.properties, feature.values)
+        self.decode_properties(feature.custom_properties, feature.values, obj)
 
         return obj
 
     def decode_properties(self, props, values, dest=None):
         if dest is None:
             dest = {}
+        decoded = []
         for i in range(0, len(props), 2):
             key = self.data.keys[props[i]]
-            val = values[props[i + 1]]
+            value_index = props[i + 1]
+            val = values[value_index]
+            decoded.append(value_index)
 
             value_type = val.WhichOneof('value_type')
             if value_type == 'string_value':
@@ -73,6 +75,10 @@ class Decoder:
                 dest[key] = val.bool_value
             elif value_type == 'json_value':
                 dest[key] = json.loads(val.json_value)
+
+        for idx in sorted(decoded, reverse=True):
+            del values[idx]
+
         return dest
 
     @staticmethod
@@ -86,8 +92,6 @@ class Decoder:
     def decode_geometry(self, geometry):
         obj = collections.OrderedDict()
         gt = obj['type'] = self.geometry_types[geometry.type]
-
-        self.decode_properties(geometry.custom_properties, geometry.values, obj)
 
         if gt == 'GeometryCollection':
             obj['geometries'] = [self.decode_geometry(geom) for geom in geometry.geometries]
@@ -103,6 +107,8 @@ class Decoder:
             obj['coordinates'] = self.decode_multi_line(geometry, is_closed=True)
         elif gt == 'MultiPolygon':
             obj['coordinates'] = self.decode_multi_polygon(geometry)
+
+        self.decode_properties(geometry.custom_properties, geometry.values, obj)
 
         return obj
 
