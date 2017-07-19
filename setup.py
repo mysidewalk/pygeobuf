@@ -21,7 +21,7 @@ except:
 with codecs_open('README', encoding='utf-8') as f:
     long_description = f.read()
 
-setup(name='geobuf',
+setup(name='geobuf-mysidewalk',
       version='1.1.0',
       description=(
         u"Geobuf is a compact binary geospatial format for lossless "
