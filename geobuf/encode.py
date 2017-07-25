@@ -47,15 +47,15 @@ class Encoder:
         return data.SerializeToString()
 
     def encode_feature_collection(self, feature_collection, feature_collection_json):
-        self.encode_custom_properties(feature_collection, feature_collection_json, ('type', 'features'))
         for feature_json in feature_collection_json.get('features'):
             self.encode_feature(feature_collection.features.add(), feature_json)
+        self.encode_custom_properties(feature_collection, feature_collection_json, ('type', 'features'))
 
     def encode_feature(self, feature, feature_json):
+        self.encode_geometry(feature.geometry, feature_json.get('geometry'))
         self.encode_id(feature, feature_json.get('id'))
         self.encode_properties(feature, feature_json.get('properties'))
         self.encode_custom_properties(feature, feature_json, ('type', 'id', 'properties', 'geometry'))
-        self.encode_geometry(feature.geometry, feature_json.get('geometry'))
 
     def encode_geometry(self, geometry, geometry_json):
 
@@ -63,9 +63,6 @@ class Encoder:
         coords = geometry_json.get('coordinates')
 
         geometry.type = self.geometry_types[gt]
-
-        self.encode_custom_properties(geometry, geometry_json,
-                                      ('type', 'id', 'coordinates', 'arcs', 'geometries', 'properties'))
 
         if gt == 'GeometryCollection':
             for geom in geometry_json.get('geometries'):
@@ -83,17 +80,24 @@ class Encoder:
         elif gt == 'MultiPolygon':
             self.add_multi_polygon(geometry, coords)
 
+        self.encode_custom_properties(geometry, geometry_json,
+                                      ('type', 'id', 'coordinates', 'geometries', 'properties'))
+
     def encode_properties(self, obj, props_json):
+        value_index = 0
         if props_json:
             for key, val in props_json.items():
-                self.encode_property(key, val, obj.properties, obj.values)
+                self.encode_property(key, val, obj.properties, obj.values, value_index)
+                value_index += 1
 
     def encode_custom_properties(self, obj, obj_json, exclude):
+        value_index = 0
         for key, val in obj_json.items():
             if not (key in exclude):
-                self.encode_property(key, val, obj.custom_properties, obj.values)
+                self.encode_property(key, val, obj.custom_properties, obj.values, value_index)
+                value_index += 1
 
-    def encode_property(self, key, val, properties, values):
+    def encode_property(self, key, val, properties, values, value_index):
         keys = self.keys
 
         if not (key in keys):
@@ -120,7 +124,7 @@ class Encoder:
             self.encode_int(val, value)
 
         properties.append(key_index)
-        properties.append(len(values) - 1)
+        properties.append(value_index)
 
     @staticmethod
     def encode_int(val, value):
