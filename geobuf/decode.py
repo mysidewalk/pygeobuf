@@ -121,6 +121,9 @@ class Decoder:
     def decode_line(self, coords, is_closed=False):
         obj = []
 
+        if not self.dim:
+            return obj
+
         r = range(self.dim)
         r2 = range(0, len(coords), self.dim)
         p0 = [0] * self.dim
@@ -136,34 +139,42 @@ class Decoder:
         return obj
 
     def decode_multi_line(self, geometry, is_closed=False):
-        if len(geometry.lengths) == 0:
-            return [self.decode_line(geometry.coords, is_closed=is_closed)]
-
         obj = []
-        i = 0
 
-        for l in geometry.lengths:
-            obj.append(self.decode_line(geometry.coords[i:i + l * self.dim], is_closed=is_closed))
-            i += l * self.dim
+        if len(geometry.coords) == 0:
+            return obj
+
+        if len(geometry.lengths) == 0:
+            obj = [self.decode_line(geometry.coords, is_closed=is_closed)]
+        else:
+            i = 0
+
+            for l in geometry.lengths:
+                obj.append(self.decode_line(geometry.coords[i:i + l * self.dim], is_closed=is_closed))
+                i += l * self.dim
 
         return obj
 
     def decode_multi_polygon(self, geometry):
-        if len(geometry.lengths) == 0:
-            return [[self.decode_line(geometry.coords, is_closed=True)]]
-
         obj = []
-        i = 0
-        j = 1
-        num_polygons = geometry.lengths[0]
 
-        for n in range(num_polygons):  # for every polygon
-            num_rings = geometry.lengths[j]
-            j += 1
-            rings = []
-            for l in geometry.lengths[j:j + num_rings]:
-                rings.append(self.decode_line(geometry.coords[i:i + l * self.dim], is_closed=True))
+        if len(geometry.coords) == 0:
+            return obj
+
+        if len(geometry.lengths) == 0:
+            obj = [[self.decode_line(geometry.coords, is_closed=True)]]
+        else:
+            i = 0
+            j = 1
+            num_polygons = geometry.lengths[0]
+
+            for n in range(num_polygons):  # for every polygon
+                num_rings = geometry.lengths[j]
                 j += 1
-                i += l * self.dim
-            obj.append(rings)
+                rings = []
+                for l in geometry.lengths[j:j + num_rings]:
+                    rings.append(self.decode_line(geometry.coords[i:i + l * self.dim], is_closed=True))
+                    j += 1
+                    i += l * self.dim
+                obj.append(rings)
         return obj

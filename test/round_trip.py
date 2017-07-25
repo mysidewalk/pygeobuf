@@ -8,8 +8,15 @@ import shutil
 exclude = {'precision.json'}
 files = glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/*.json"))
 forward_fixtures = [filename for filename in files if os.path.basename(filename) not in exclude]
-# mixing properties and custom properties on features won't work without modifying the js library
-reverse_fixtures = [filename for filename in forward_fixtures if os.path.basename(filename) != 'props.json']
+
+# python encode -> javascript decode incompatibilities:
+#   - features containing both geojson properties and custom properties
+#   - empty geometries
+reverse_fixtures = [
+    filename for filename in forward_fixtures
+    if os.path.basename(filename) != 'props.json'
+    and not os.path.basename(filename).startswith('empty-')
+]
 
 
 def test_forward(filename):
