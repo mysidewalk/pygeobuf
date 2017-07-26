@@ -142,9 +142,8 @@ class Decoder:
         obj = []
 
         if len(geometry.coords) == 0:
-            return obj
-
-        if len(geometry.lengths) == 0:
+            pass
+        elif len(geometry.lengths) == 0:
             obj = [self.decode_line(geometry.coords, is_closed=is_closed)]
         else:
             i = 0
@@ -159,9 +158,8 @@ class Decoder:
         obj = []
 
         if len(geometry.coords) == 0:
-            return obj
-
-        if len(geometry.lengths) == 0:
+            pass
+        elif len(geometry.lengths) == 0:
             obj = [[self.decode_line(geometry.coords, is_closed=True)]]
         else:
             i = 0
